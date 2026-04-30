@@ -1,6 +1,5 @@
 import {createHydrogenContext} from '@shopify/hydrogen';
 import {AppSession} from '~/lib/session';
-import {CART_QUERY_FRAGMENT} from '~/lib/fragments';
 
 // Define the additional context object
 const additionalContext = {
@@ -47,11 +46,9 @@ export async function createHydrogenRouterContext(
       cache,
       waitUntil,
       session,
-      // Or detect from URL path based on locale subpath, cookies, or any other strategy
-      i18n: {language: 'EN', country: 'US'},
-      cart: {
-        queryFragment: CART_QUERY_FRAGMENT,
-      },
+      // Landing page en español MX. No usamos i18n del storefront pero el
+      // contexto de Hydrogen lo requiere.
+      i18n: {language: 'ES', country: 'MX'},
     },
     additionalContext,
   );

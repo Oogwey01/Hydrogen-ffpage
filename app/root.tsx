@@ -1,4 +1,4 @@
-import {Analytics, getShopAnalytics, useNonce} from '@shopify/hydrogen';
+import {useNonce} from '@shopify/hydrogen';
 import {
   Outlet,
   useRouteError,
@@ -11,150 +11,97 @@ import {
   useRouteLoaderData,
 } from 'react-router';
 import type {Route} from './+types/root';
-import favicon from '~/assets/favicon.svg';
-import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
+
+// Fonts: self-hosted via @fontsource (no Google CDN, no tracking).
+import '@fontsource/barlow/300.css';
+import '@fontsource/barlow/400.css';
+import '@fontsource/barlow/500.css';
+import '@fontsource/barlow/600.css';
+import '@fontsource/barlow/700.css';
+import '@fontsource/barlow/800.css';
+import '@fontsource/montserrat/300.css';
+import '@fontsource/montserrat/400.css';
+import '@fontsource/montserrat/500.css';
+import '@fontsource/montserrat/600.css';
+
 import resetStyles from '~/styles/reset.css?url';
 import appStyles from '~/styles/app.css?url';
-import {PageLayout} from './components/PageLayout';
+import {MetaPixel} from '~/components/common/MetaPixel';
 
 export type RootLoader = typeof loader;
 
 /**
- * This is important to avoid re-fetching root queries on sub-navigations
+ * Sin productos ni cart, no hay razón para revalidar el root en cada navegación.
  */
-export const shouldRevalidate: ShouldRevalidateFunction = ({
-  formMethod,
-  currentUrl,
-  nextUrl,
-}) => {
-  // revalidate when a mutation is performed e.g add to cart, login...
-  if (formMethod && formMethod !== 'GET') return true;
+export const shouldRevalidate: ShouldRevalidateFunction = () => false;
 
-  // revalidate when manually revalidating via useRevalidator
-  if (currentUrl.toString() === nextUrl.toString()) return true;
-
-  // Defaulting to no revalidation for root loader data to improve performance.
-  // When using this feature, you risk your UI getting out of sync with your server.
-  // Use with caution. If you are uncomfortable with this optimization, update the
-  // line below to `return defaultShouldRevalidate` instead.
-  // For more details see: https://remix.run/docs/en/main/route/should-revalidate
-  return false;
-};
-
-/**
- * The main and reset stylesheets are added in the Layout component
- * to prevent a bug in development HMR updates.
- *
- * This avoids the "failed to execute 'insertBefore' on 'Node'" error
- * that occurs after editing and navigating to another page.
- *
- * It's a temporary fix until the issue is resolved.
- * https://github.com/remix-run/remix/issues/9242
- */
 export function links() {
   return [
-    {
-      rel: 'preconnect',
-      href: 'https://cdn.shopify.com',
-    },
-    {
-      rel: 'preconnect',
-      href: 'https://shop.app',
-    },
-    {rel: 'icon', type: 'image/svg+xml', href: favicon},
+    {rel: 'preconnect', href: 'https://connect.facebook.net'},
+    {rel: 'icon', type: 'image/png', sizes: '16x16', href: '/images/favicon/favicon-16x16.png'},
+    {rel: 'icon', type: 'image/png', sizes: '32x32', href: '/images/favicon/favicon-32x32.png'},
+    {rel: 'icon', type: 'image/png', sizes: '192x192', href: '/images/favicon/android-chrome-192x192.png'},
+    {rel: 'icon', type: 'image/png', sizes: '512x512', href: '/images/favicon/android-chrome-512x512.png'},
+    {rel: 'apple-touch-icon', sizes: '180x180', href: '/images/favicon/apple-touch-icon.png'},
   ];
 }
 
-export async function loader(args: Route.LoaderArgs) {
-  // Start fetching non-critical data without blocking time to first byte
-  const deferredData = loadDeferredData(args);
+export const meta: Route.MetaFunction = () => [
+  {title: 'Armando FresaFit | Mentoría Empresarial & Estrategia de Negocios'},
+  {
+    name: 'description',
+    content:
+      '5 años convirtiendo errores en aprendizaje. Mentoría empresarial, webinars y consultoría estratégica para emprendedores que buscan escalar sus negocios con resultados reales.',
+  },
+  {name: 'keywords', content: 'mentoría empresarial, consultoría de negocios, webinars, estrategia de negocios, Armando FresaFit, emprendimiento, marketing digital, escalar negocio'},
+  {property: 'og:title', content: 'Armando FresaFit | Mentoría Empresarial'},
+  {
+    property: 'og:description',
+    content: 'Estrategia real de un joven empresario mexicano. Mentoría, webinars y consultoría para escalar tu negocio.',
+  },
+  {property: 'og:type', content: 'website'},
+  {property: 'og:locale', content: 'es_MX'},
+  {property: 'og:site_name', content: 'Armando FresaFit'},
+  {name: 'twitter:card', content: 'summary_large_image'},
+  {name: 'twitter:title', content: 'Armando FresaFit | Mentoría Empresarial'},
+  {
+    name: 'twitter:description',
+    content: '5 años convirtiendo errores en aprendizaje. Estrategia real para emprendedores.',
+  },
+  {name: 'robots', content: 'index, follow'},
+];
 
-  // Await the critical data required to render initial state of the page
-  const criticalData = await loadCriticalData(args);
-
-  const {storefront, env} = args.context;
-
+/**
+ * Root loader: solo expone env vars públicas al cliente.
+ * Sin queries de storefront porque esto NO es una tienda — usamos Shopify
+ * Admin API server-side para crear customers desde el form.
+ */
+export async function loader({context}: Route.LoaderArgs) {
   return {
-    ...deferredData,
-    ...criticalData,
-    publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
-    shop: getShopAnalytics({
-      storefront,
-      publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
-    }),
-    consent: {
-      checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
-      storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
-      withPrivacyBanner: false,
-      // localize the privacy banner
-      country: args.context.storefront.i18n.country,
-      language: args.context.storefront.i18n.language,
+    publicEnv: {
+      META_PIXEL_ID: context.env.PUBLIC_META_PIXEL_ID ?? '',
+      CALENDLY_URL: context.env.PUBLIC_CALENDLY_URL ?? '',
     },
-  };
-}
-
-/**
- * Load data necessary for rendering content above the fold. This is the critical data
- * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
- */
-async function loadCriticalData({context}: Route.LoaderArgs) {
-  const {storefront} = context;
-
-  const [header] = await Promise.all([
-    storefront.query(HEADER_QUERY, {
-      cache: storefront.CacheLong(),
-      variables: {
-        headerMenuHandle: 'main-menu', // Adjust to your header menu handle
-      },
-    }),
-    // Add other queries here, so that they are loaded in parallel
-  ]);
-
-  return {header};
-}
-
-/**
- * Load data for rendering content below the fold. This data is deferred and will be
- * fetched after the initial page load. If it's unavailable, the page should still 200.
- * Make sure to not throw any errors here, as it will cause the page to 500.
- */
-function loadDeferredData({context}: Route.LoaderArgs) {
-  const {storefront, customerAccount, cart} = context;
-
-  // defer the footer query (below the fold)
-  const footer = storefront
-    .query(FOOTER_QUERY, {
-      cache: storefront.CacheLong(),
-      variables: {
-        footerMenuHandle: 'footer', // Adjust to your footer menu handle
-      },
-    })
-    .catch((error: Error) => {
-      // Log query errors, but don't throw them so the page can still render
-      console.error(error);
-      return null;
-    });
-  return {
-    cart: cart.get(),
-    isLoggedIn: customerAccount.isLoggedIn(),
-    footer,
   };
 }
 
 export function Layout({children}: {children?: React.ReactNode}) {
   const nonce = useNonce();
+  const data = useRouteLoaderData<RootLoader>('root');
+  const pixelId = data?.publicEnv.META_PIXEL_ID ?? '';
 
   return (
-    <html lang="en">
+    <html lang="es">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <link rel="stylesheet" href={resetStyles}></link>
-        <link rel="stylesheet" href={appStyles}></link>
+        <link rel="stylesheet" href={resetStyles} />
+        <link rel="stylesheet" href={appStyles} />
         <Meta />
         <Links />
       </head>
       <body>
+        <MetaPixel pixelId={pixelId} nonce={nonce} />
         {children}
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
@@ -164,28 +111,12 @@ export function Layout({children}: {children?: React.ReactNode}) {
 }
 
 export default function App() {
-  const data = useRouteLoaderData<RootLoader>('root');
-
-  if (!data) {
-    return <Outlet />;
-  }
-
-  return (
-    <Analytics.Provider
-      cart={data.cart}
-      shop={data.shop}
-      consent={data.consent}
-    >
-      <PageLayout {...data}>
-        <Outlet />
-      </PageLayout>
-    </Analytics.Provider>
-  );
+  return <Outlet />;
 }
 
 export function ErrorBoundary() {
   const error = useRouteError();
-  let errorMessage = 'Unknown error';
+  let errorMessage = 'Error desconocido';
   let errorStatus = 500;
 
   if (isRouteErrorResponse(error)) {
@@ -196,14 +127,16 @@ export function ErrorBoundary() {
   }
 
   return (
-    <div className="route-error">
-      <h1>Oops</h1>
-      <h2>{errorStatus}</h2>
-      {errorMessage && (
-        <fieldset>
-          <pre>{errorMessage}</pre>
-        </fieldset>
-      )}
+    <div className="min-h-screen flex items-center justify-center bg-brand-black text-white px-6">
+      <div className="max-w-md text-center">
+        <h1 className="font-barlow font-extrabold uppercase text-4xl text-brand-beige">Oops</h1>
+        <h2 className="font-barlow text-xl mt-2">{errorStatus}</h2>
+        {errorMessage && (
+          <p className="font-montserrat text-sm text-gray-300 mt-4 break-words">
+            {errorMessage}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
