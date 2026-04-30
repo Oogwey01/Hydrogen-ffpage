@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Self-hosted local font: Mr Dafoe (display script) */
+@font-face {
+  font-family: "Mr Dafoe";
+  src: url("/fonts/MrDafoe-Regular.ttf") format("truetype");
+  font-display: swap;
+  font-weight: 400;
+  font-style: normal;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-brand-black text-white font-barlow antialiased;
+  }
+
+  /* Noise grain overlay — premium texture sobre toda la página */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.045'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 180px 180px;
+  }
+
+  ::selection {
+    @apply bg-brand-beige/30 text-white;
+  }
+
+  /* Focus visible accesible — solo con teclado */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-beige ring-offset-2 ring-offset-brand-black rounded-[inherit];
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-brand-black;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-brand-beige/50 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-brand-beige;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-8 py-3.5 bg-brand-beige text-brand-black font-barlow font-bold
+           rounded-md transition-all duration-300 hover:bg-brand-beige-light hover:scale-105
+           active:scale-95 text-sm uppercase tracking-wider;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center px-8 py-3.5 border-2 border-brand-beige text-brand-beige font-barlow font-bold
+           rounded-md transition-all duration-300 hover:bg-brand-beige hover:text-brand-black
+           active:scale-95 text-sm uppercase tracking-wider;
+  }
+
+  .section-padding {
+    @apply px-4 sm:px-6 lg:px-8 py-16 md:py-24;
+  }
+
+  .container-custom {
+    @apply max-w-7xl mx-auto;
+  }
+
+  .heading-xl {
+    @apply font-barlow text-xl sm:text-3xl md:text-5xl lg:text-6xl font-extrabold uppercase leading-tight break-words;
+  }
+
+  .heading-lg {
+    @apply font-barlow text-2xl sm:text-3xl md:text-4xl font-extrabold uppercase tracking-wide;
+  }
+
+  .heading-md {
+    @apply font-barlow text-xl sm:text-2xl font-bold;
+  }
+
+  .body-text {
+    @apply font-montserrat text-base font-light text-gray-300 leading-relaxed;
+  }
+}
+
+@keyframes marquee-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes marquee-right {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
